@@ -7,30 +7,12 @@ from Helpers import Email as EmailHelper
 config = dotenv_values(".env")
 
 app = Flask(__name__)
-limiter = Limiter(
-    app,
-    key_func=get_remote_address,
-    default_limits=["5000 per day", "50 per minute"],
-    storage_uri="memory://",
-)
-
 mailbox = EmailHelper.Email()
 mailbox.Login()
 
 
-def index_error_responder(request_limit):
-    return jsonify(
-        {
-            "status": "error",
-            "message": "You have reached the request limit of {} requests per day".format(
-                request_limit.limit
-            ),
-        }
-    )
-
 
 @app.route('/read/<email>', methods=['GET'])
-@limiter.limit("20/minute", on_breach=index_error_responder)
 def get_message(email):
     return jsonify(mailbox.GetMessages(email))
 
@@ -41,7 +23,6 @@ def delete_message(uid):
 
 
 @app.route('/readby/<email>/<string_data>', methods=['GET'])
-@limiter.limit("20/minute", on_breach=index_error_responder)
 def read_by(email, string_data):
     if string_data is None:
         return jsonify(
